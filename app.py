@@ -3,6 +3,7 @@ import streamlit as st
 
 PAGES = {
     "Get price prediction": price_prediction
+    "Singapore Private Properties Dashboard": dashboard
 }
 
 st.sidebar.title('Singapore Private Property Price Prediction')
