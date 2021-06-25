@@ -1,5 +1,6 @@
 # Personally added
 .vscode
+# .streamlit # To be changed when we want to be serious in deploying!
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
