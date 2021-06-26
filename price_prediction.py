@@ -1,7 +1,16 @@
 import streamlit as st
+import pandas as pd
 import sklearn
 import requests
 import json
+import pickle
+from math import sin, cos, sqrt, atan2, radians
+
+EMAIL = st.secrets["EMAIL"]
+PASSWORD = st.secrets["PASSWORD"]
+
+with open('finalized_model.pkl', 'rb') as file:
+    model = pickle.load(file)
 
 st.set_page_config(
     page_title="Singapore Private Property Price Prediction",
@@ -9,6 +18,18 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+
+def get_token(EMAIL, PASSWORD):
+    data = {
+        'email': EMAIL,
+        'password': PASSWORD
+    }
+
+    res = requests.post(
+        'https://developers.onemap.sg/privateapi/auth/post/getToken', json=data)
+
+    return res.json()['access_token']
 
 
 def get_lat_long(address):
@@ -20,7 +41,59 @@ def get_lat_long(address):
     elif data['found'] > 0:
         results = data['results'][0]
         latitude, longitude = results['LATITUDE'], results['LONGITUDE']
-        return latitude, longitude
+        return float(latitude), float(longitude)
+
+
+def get_distance(start_lat, end_lat, start_long, end_long):
+    R = 6373.0
+
+    start_lat = radians(start_lat)
+    end_lat = radians(end_lat)
+    start_long = radians(start_long)
+    end_long = radians(end_long)
+
+    dlon = end_long - start_long
+    dlat = end_lat - start_lat
+
+    a = sin(dlat / 2)**2 + cos(start_lat) * cos(end_lat) * sin(dlon / 2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    distance = R * c
+
+    return distance
+
+
+def get_walking_distance(start_lat, start_long):
+    read_mrt_lat_long = pd.read_csv('mrtsg.csv')
+    distance = 100000000000000000000000000000000
+    selected_lat = 0
+    selected_long = 0
+
+    for mrt in range(len(read_mrt_lat_long)):
+        end_lat = read_mrt_lat_long['Latitude'].iloc[mrt]
+        end_long = read_mrt_lat_long['Longitude'].iloc[mrt]
+
+        current_distance = get_distance(
+            start_lat, end_lat, start_long, end_long)
+
+        if current_distance < distance:
+            distance = current_distance
+            selected_lat = end_lat
+            selected_long = end_long
+
+    TOKEN = get_token(EMAIL, PASSWORD)
+    url = "https://developers.onemap.sg/privateapi/routingsvc/route?" + \
+        "start=" + str(start_lat) + "," + str(start_long) + \
+        "&end=" + str(end_lat) + "," + str(end_long) + \
+        "&routeType=walk" + '&token=' + TOKEN
+    response = requests.get(url)
+    data = response.json()
+    if 'error' not in data.keys():
+        walking_distance = data['route_summary']['total_distance']
+    else:
+        walking_distance = 0
+
+    return walking_distance
 
 
 def transform_user_input(area, floor, remaining_tenure, is_freehold, walking_distance, property_type, region, type_of_sale):
@@ -102,11 +175,13 @@ def app():
 
     if submit_button:
         latitude, longitude = get_lat_long(address)
-        # need to calculate walking distance to nearest MRT
+        walking_distance = get_walking_distance(latitude, longitude)
 
         if len(unit_num) > 0:
             # unit #01-01 gives you level 1
             floor_lvl = float(unit_num.split("-")[0][1:].lstrip("0"))
+        else:
+            floor_lvl = 1.0
 
         # Get result below here!
         if freehold == 'Yes':
@@ -114,4 +189,10 @@ def app():
         else:
             freehold = 0
 
-        st.write('We are still a work in progress, come back in a week and you will be able to see your how much your house is worth!')
+        transformed_user_input = transform_user_input(
+            area_sqft, floor_lvl, tenure, freehold, walking_distance, property_type, region, sale_type)
+        predicted_price = int(model.predict(transformed_user_input)[0])
+
+        st.write(f'''
+        We predict your price to be worth **${predicted_price}/sqft**!
+        ''')
