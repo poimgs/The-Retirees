@@ -1,6 +1,8 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import sklearn
+import shap
 import requests
 import json
 import pickle
@@ -147,6 +149,24 @@ def transform_user_input(area, floor, remaining_tenure, is_freehold, walking_dis
     return [transformed_input]
 
 
+def st_shap(plot, height=None):
+    shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
+    components.html(shap_html, height=height)
+
+
+def shap_plot(model, transformed_user_input):
+    column_names = ['Area (SQFT)', 'Floor', 'Remaining Tenure', 'Is Freehold',
+                    'walk_distance', 'Condo_Apartment', 'Landed', 'East Region',
+                    'North East Region', 'North Region', 'West Region', 'Resale',
+                    'Sub Sale']
+    X = pd.DataFrame(transformed_user_input, columns=column_names)
+    explainer = shap.TreeExplainer(model.best_estimator_)
+    shap_values = explainer.shap_values(X)
+
+    st_shap(shap.force_plot(explainer.expected_value,
+            shap_values[0, :], X.iloc[0, :]))
+
+
 def app():
     st.write(
         '<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
@@ -194,5 +214,9 @@ def app():
         predicted_price = int(model.predict(transformed_user_input)[0])
 
         st.write(f'''
-        We predict your price to be worth **${predicted_price}/sqft**!
+        We predict your house to be worth **${predicted_price}/sqft**!
+
+        Below are the factors that the model has considered for this prediction
         ''')
+
+        shap_plot(model, transformed_user_input)
