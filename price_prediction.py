@@ -211,10 +211,11 @@ def app():
 
         transformed_user_input = transform_user_input(
             area_sqft, floor_lvl, tenure, freehold, walking_distance, property_type, region, sale_type)
-        predicted_price = int(model.predict(transformed_user_input)[0])
+        predicted_unit_price = model.predict(transformed_user_input)[0]
+        predicted_total_price = predicted_unit_price * area_sqft
 
         st.write(f'''
-        We predict your house to be worth **${predicted_price}/sqft**!
+        We predict your house to be worth **${int(predicted_total_price):,}** (${int(predicted_unit_price)}/sqft)!
 
         Below are the factors that the model has considered for this prediction
         ''')
