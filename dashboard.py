@@ -16,40 +16,46 @@ st.markdown("This is the dataset we used")
 df = pd.read_csv("singapore_housing_prices_750.csv")
 st.write(df)
 
+df2 = df.groupby(['Planning Region'])['Unit Price ($ PSF)'].mean().to_frame().reset_index()
 #Let's show a bar chart
-region_sum_transaction = px.bar(df, 
+region_sum_transaction = px.bar(df2, 
 x="Planning Region", 
-y="Transacted Price ($)", 
-title = "Transaction Price per Region")
+y="Unit Price ($ PSF)", 
+title = "Average Unit Price per Region")
 
 st.plotly_chart(region_sum_transaction)
+st.markdown("From this bar chart, we can see that the area with Highest Average Unit Price in Singapore is the Central Region, followed by the West Region, North East Region, East Region and lastly, the North Region.")
 
+df1 = df.groupby(['Property Type'])['Unit Price ($ PSF)'].mean().to_frame().reset_index()
 #Let's show a bar chart
-type_sum_transaction = px.bar(df, 
+type_sum_transaction = px.bar(df1, 
 x="Property Type", 
-y="Transacted Price ($)", 
-title = "Transaction Price per Property Type")
+y="Unit Price ($ PSF)", 
+title = "Unit Price per Property Type")
 
 st.plotly_chart(type_sum_transaction)
+st.markdown("
 
+df3 = df.groupby(['Area (SQM)'])['Unit Price ($ PSF)'].mean().to_frame().reset_index()
 #Let's show a scatter plot
-area_unit_price = px.scatter(df,
+area_unit_price = px.scatter(df3,
 x="Area (SQM)",
-y="Unit Price ($ PSM)",
+y="Unit Price ($ PSF)",
 title="Correlation between Area and Unit Price")
 
 st.plotly_chart(area_unit_price)
 
+df4 = df.groupby(['Sale Date'])['Unit Price ($ PSF)'].mean().to_frame().reset_index()
 #Let's show a line chart
-time_unit_price = px.line(df,
+time_unit_price = px.line(df4,
 x="Sale Date",
-y="Transacted Price ($)",
-title="Transacted Price Across Time")
+y="Unit Price ($ PSF)",
+title="Unit Price Across Time")
 
 st.plotly_chart(time_unit_price)
 
 #Let's show a histogram
-area_histogram = px.histogram(df,
-x="Area (SQM)")
+#area_histogram = px.histogram(df,
+#x="Area (SQM)")
 
-st.plotly_chart(area_histogram)
+#st.plotly_chart(area_histogram)
