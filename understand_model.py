@@ -56,6 +56,8 @@ def shap_plot(model):
 def app():
     # csv file used to train
     st.write('''
+    # Understand our model! 
+    
     First up, let's set some context!
 
     Here is a snippet of the data we used to train our model. Do keep in mind that this is after cleaning! (But before preprocessing)
