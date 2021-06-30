@@ -34,7 +34,7 @@ y="Unit Price ($ PSM)",
 title = "Unit Price per Property Type")
 
 st.plotly_chart(type_sum_transaction)
-st.markdown("From this bar chart, we can see that the Property Type with Highest Average Unit Price in Singapore is Apartments, followed by Condominiums, Detached Houses, Terrace Houses, Semi-Detached Houses, and lastly, Executive Condominium."
+st.markdown("From this bar chart, we can see that the Property Type with Highest Average Unit Price in Singapore is Apartments, followed by Condominiums, Detached Houses, Terrace Houses, Semi-Detached Houses, and lastly, Executive Condominium.")
 
 #df3 = df.groupby(['Area (SQM)'])['Unit Price ($ PSF)'].mean().to_frame().reset_index()
 #Let's show a scatter plot
@@ -53,9 +53,3 @@ y="Unit Price ($ PSM)",
 title="Unit Price Across Time")
 
 st.plotly_chart(time_unit_price)
-
-#Let's show a histogram
-#area_histogram = px.histogram(df,
-#x="Area (SQM)")
-
-#st.plotly_chart(area_histogram)
