@@ -45,11 +45,25 @@ st.markdown("From this bar chart, we can see that the Property Type with Highest
 
 #st.plotly_chart(area_unit_price)
 
-df4 = df.groupby(['Sale Date'])['Unit Price ($ PSM)'].mean().to_frame().reset_index()
-#Let's show a line chart
-time_unit_price = px.line(df4,
-x="Sale Date",
-y="Unit Price ($ PSM)",
-title="Unit Price Across Time")
+by_month = pd.to_datetime(df['Sale Date']).dt.to_period('M').value_counts().sort_index()
+by_month.index = pd.PeriodIndex(by_month.index)
+df_month = by_month.rename_axis('Sale Month').reset_index(name='counts')
 
-st.plotly_chart(time_unit_price)
+trans = go.Figure(data=go.Scatter(x=df_month['Sale Month'].astype(dtype=str), 
+                        y=df_month['counts'],
+                        marker_color='indianred', text="counts"))
+trans.update_layout({"title": 'Number of Transactions from Jan 2018 to Dec 2020',
+                   "xaxis": {"title":"Months"},
+                   "yaxis": {"title":"Number of transactions"},
+                   "showlegend": False})
+
+#df4 = df.groupby(['Sale Date'])['Unit Price ($ PSM)'].mean().to_frame().reset_index()
+#Let's show a line chart
+#time_unit_price = px.line(df4,
+#="Sale Date",
+#y="Unit Price ($ PSM)",
+#title="Unit Price Across Time")
+
+st.plotly_chart(trans)
+
+st.markdown("The above line chart shows the number of transactions throughout 3 years from 2018 to 2020. We can see that the number of transactions of private properties in Singapore fluctuates quite drastically. This is because housing prices are affected by a lot of external factors such as interest rate, the macroeconomic condition, etc.")
