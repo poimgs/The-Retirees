@@ -6,6 +6,7 @@ import shap
 import requests
 import json
 import pickle
+import pandas as pd
 from math import sin, cos, sqrt, atan2, radians
 
 EMAIL = st.secrets["EMAIL"]
@@ -96,8 +97,7 @@ def get_walking_distance(start_lat, start_long):
         walking_distance = 0
 
     return walking_distance
-
-
+  
 def transform_user_input(area, floor, remaining_tenure, is_freehold, walking_distance, property_type, region, type_of_sale):
     transformed_input = [area, floor, remaining_tenure,
                          is_freehold, walking_distance]
@@ -166,7 +166,6 @@ def shap_plot(model, transformed_user_input):
     st_shap(shap.force_plot(explainer.expected_value,
             shap_values[0, :], X.iloc[0, :]))
 
-
 def app():
     st.write(
         '<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
@@ -221,3 +220,5 @@ def app():
         ''')
 
         shap_plot(model, transformed_user_input)
+
+        st.write(walking_distance)
