@@ -1,11 +1,19 @@
 import streamlit as st
+import streamlit.components.v1 as components
+import pandas as pd
+import sklearn
+import shap
 import requests
 import json
+import pickle
 import pandas as pd
 from math import sin, cos, sqrt, atan2, radians
 
 EMAIL = st.secrets["EMAIL"]
 PASSWORD = st.secrets["PASSWORD"]
+
+with open('finalized_model.pkl', 'rb') as file:
+    model = pickle.load(file)
 
 st.set_page_config(
     page_title="Singapore Private Property Price Prediction",
@@ -89,7 +97,74 @@ def get_walking_distance(start_lat, start_long):
         walking_distance = 0
 
     return walking_distance
+  
+def transform_user_input(area, floor, remaining_tenure, is_freehold, walking_distance, property_type, region, type_of_sale):
+    transformed_input = [area, floor, remaining_tenure,
+                         is_freehold, walking_distance]
 
+    if property_type == "Apartment or Condominium":
+        transformed_input.append(1)
+        transformed_input.append(0)
+    elif property_type == "Executive Condominium":
+        transformed_input.append(0)
+        transformed_input.append(0)
+    else:
+        transformed_input.append(0)
+        transformed_input.append(1)
+    if region == "East":
+        transformed_input.append(1)
+        transformed_input.append(0)
+        transformed_input.append(0)
+        transformed_input.append(0)
+    elif region == "North East":
+        transformed_input.append(0)
+        transformed_input.append(1)
+        transformed_input.append(0)
+        transformed_input.append(0)
+    elif region == "North":
+        transformed_input.append(0)
+        transformed_input.append(0)
+        transformed_input.append(1)
+        transformed_input.append(0)
+    elif region == "West":
+        transformed_input.append(0)
+        transformed_input.append(0)
+        transformed_input.append(0)
+        transformed_input.append(1)
+    else:
+        transformed_input.append(0)
+        transformed_input.append(0)
+        transformed_input.append(0)
+        transformed_input.append(0)
+    if type_of_sale == "Resale":
+        transformed_input.append(1)
+        transformed_input.append(0)
+    elif type_of_sale == "Sub Sale":
+        transformed_input.append(0)
+        transformed_input.append(1)
+    else:
+        transformed_input.append(0)
+        transformed_input.append(0)
+
+    return [transformed_input]
+
+
+def st_shap(plot, height=None):
+    shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
+    components.html(shap_html, height=height)
+
+
+def shap_plot(model, transformed_user_input):
+    column_names = ['Area (SQFT)', 'Floor', 'Remaining Tenure', 'Is Freehold',
+                    'walk_distance', 'Condo_Apartment', 'Landed', 'East Region',
+                    'North East Region', 'North Region', 'West Region', 'Resale',
+                    'Sub Sale']
+    X = pd.DataFrame(transformed_user_input, columns=column_names)
+    explainer = shap.TreeExplainer(model.best_estimator_)
+    shap_values = explainer.shap_values(X)
+
+    st_shap(shap.force_plot(explainer.expected_value,
+            shap_values[0, :], X.iloc[0, :]))
 
 def app():
     st.write(
@@ -124,5 +199,26 @@ def app():
         if len(unit_num) > 0:
             # unit #01-01 gives you level 1
             floor_lvl = float(unit_num.split("-")[0][1:].lstrip("0"))
+        else:
+            floor_lvl = 1.0
+
+        # Get result below here!
+        if freehold == 'Yes':
+            freehold = 1
+        else:
+            freehold = 0
+
+        transformed_user_input = transform_user_input(
+            area_sqft, floor_lvl, tenure, freehold, walking_distance, property_type, region, sale_type)
+        predicted_unit_price = model.predict(transformed_user_input)[0]
+        predicted_total_price = predicted_unit_price * area_sqft
+
+        st.write(f'''
+        We predict your house to be worth **${int(predicted_total_price):,}** (${int(predicted_unit_price)}/sqft)!
+
+        Below are the factors that the model has considered for this prediction
+        ''')
+
+        shap_plot(model, transformed_user_input)
 
         st.write(walking_distance)
